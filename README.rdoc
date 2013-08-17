@@ -1,0 +1,6 @@
+= frack
+
+Describe your project here
+
+:include:frack.rdoc
+

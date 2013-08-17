@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+require 'gli'
+require 'frack'
+
+include GLI::App
+
+program_desc 'Describe your application here'
+
+version Frack::VERSION
+
+#setup edit foo
+desc 'Manage Probes'
+command :probe do |c|
+  c.action do |global_options,options,args|
+    c.command :list do |list|
+      pp Frack::Probe.list_all
+    end
+  end
+end
+
+desc 'Describe monitor here'
+arg_name 'Describe arguments to monitor here'
+command :monitor do |c|
+  c.action do |global_options,options,args|
+    puts "monitor command ran"
+  end
+end
+
+desc 'Describe push here'
+arg_name 'Describe arguments to push here'
+command :push do |c|
+  c.action do |global_options,options,args|
+    continue = true
+    while continue do
+      begin
+        Frack::Probe.list_all.each do |probe|
+          StatHat::API.ez_post_value(probe.name, "peter@cleoph.us", probe.temp_f)
+          puts "#{Time.now} : #{probe.name} : #{probe.temp_f}"
+        end
+        sleep 30
+      rescue Interrupt
+        puts 'exiting'
+        continue = false
+      rescue => e
+        puts "#{Time.now} : Exception : #{e}"
+        print e.backtrace.join("\n")
+      end
+    end
+  end
+end
+
+pre do |global,command,options,args|
+  unless Dir.exists? Frack::Settings.w1_path
+    raise "One Wire Directory does not exist; make sure modprobe has happened"
+  end
+  true
+end
+
+post do |global,command,options,args|
+  # Post logic here
+  # Use skips_post before a command to skip this
+  # block on that command only
+end
+
+on_error do |exception|
+  # Error logic here
+  # return false to skip default error handling
+  raise exception
+  false
+end
+
+exit run(ARGV)
